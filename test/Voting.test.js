@@ -134,4 +134,55 @@ describe("Voting Contract", () => {
             })
         })
     })
+
+    describe("Close voting", () => {
+        let tx, result
+        beforeEach(async () => {
+            const question =
+                "Which programming language is your favourite language?"
+            const candidates = ["C#", "C++", "Python", "Solidity"]
+            tx = await voting.createVoting(question, candidates)
+            result = await tx.wait()
+        })
+
+        describe("Success", () => {
+            beforeEach(async () => {
+                const id = 1
+                tx = await voting.closeVoting(id)
+                result = await tx.wait()
+            })
+
+            it("closes the voting", async () => {
+                const [, , , , , opened] = await voting.getVoting(1)
+                expect(opened).to.equal(false)
+            })
+
+            it("emits the Closed event", async () => {
+                const filter = voting.filters.Closed
+                const events = await voting.queryFilter(filter, -1)
+                const event = events[0]
+
+                expect(event.fragment.name).to.equal("Closed")
+                const args = event.args
+                expect(args.id).to.equal(1)
+                expect(args.owner).to.equal(deployer.address)
+            })
+        })
+
+        describe("Failure", () => {
+            it("rejects invalid ids", async () => {
+                const invalidId = 99
+                await expect(voting.closeVoting(invalidId)).to.be.revertedWith(
+                    "Voting does not exist"
+                )
+            })
+
+            it("rejects invalid msg.sender", async () => {
+                const validId = 1
+                await expect(
+                    voting.connect(player1).closeVoting(validId)
+                ).to.be.revertedWith("Only creator can close the voting")
+            })
+        })
+    })
 })
