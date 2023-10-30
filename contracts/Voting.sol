@@ -41,8 +41,8 @@ contract Voting is Ownable {
     }
 
     function createVoting(
-        string memory _question,
-        string[] memory _candidates
+        string calldata _question,
+        string[] calldata _candidates
     ) public {
         ++votingsCount;
         _Voting storage voting = votings[votingsCount];
